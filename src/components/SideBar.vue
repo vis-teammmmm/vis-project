@@ -7,11 +7,13 @@
                 <el-upload
                     v-model:file-list="fileList"
                     :class="upload-demo"
-                    action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+                    action="http://localhost:3000/upload"
                     multiple
                     index="1"
                     :on-preview="handlePreview"
                     :on-remove="handleRemove"
+                    :on-success="handleSuccess"
+                    :on-error="handleError"
                     :before-remove="beforeRemove"
                     :limit="3"
                     :on-exceed="handleExceed"
@@ -79,10 +81,11 @@
         },
         data() {
             return {
+                fileList: [],
                 selectedChartNum:0,
-                chartNumList:[],
-                //chaerNumList内的元素从1开始
+                chartNumList:[], //chaerNumList内的元素从1开始
                 selectedChartType:'pie',
+                fileDataMap: [], // 存储文件和对应数据的数组，里面每个元素有两个子元素，uid和data，分别表示文件id和文件对应的数据
             }
         },
         methods: {
@@ -104,8 +107,40 @@
             },
             mapChartSelected(){
                 this.selectedChartType='map'
-            }
+            },
             // 选图表类型事件
+            handlePreview(file) {
+                console.log('preview', file);
+            },
+            handleRemove(file, fileList) { // 在删除文件的同时，将组件内的数据也删除
+                console.log('remove', file, fileList);
+                const index = this.fileDataMap.findIndex(item => item.uid === file.uid)
+                if(index !== -1){
+                    this.fileDataMap.splice(index, 1)
+                }
+            },
+            beforeRemove(file) {
+                return this.$confirm(`确定移除 ${file.name}?`);
+            },
+            handleSuccess(response, file, fileList) { // 上传成功后，将文件和对应数据存储到组件内的数组中
+                console.log('success', response, file, fileList);
+                this.$message.success(`${file.name} 上传成功`);
+                this.fileDataMap.push({
+                    uid: file.uid,
+                    data: response.data,
+                });
+                console.log('存储的数据:', this.fileDataMap);
+            },
+            handleError(err, file, fileList) {
+                console.log('error', err, file, fileList);
+                this.$message.error(`${file.name} 上传失败`);
+            },
+            submitUpload() {
+                this.$refs.upload.submit();
+            },
+            handleExceed() {
+                this.$message.warning(`最多只能上传 3 个文件.`);
+            },
         },
     }
 </script>
