@@ -2,12 +2,15 @@
     <el-container class="layout-container-demo">
         <side-bar
             @updateChart="chartUpdated"
+            @updateAll="allUpdated"
             :darkMode="darkMode"
         />
         <head-bar-and-main-contents
             :optionList="optionList"
             :updatesignal="updatesignal"
+            :updateallsignal="updateallsignal"
             @themeChanged="handleThemeChange"
+            :selectedChartIndex="selectedChartIndex"
         ></head-bar-and-main-contents>
         <!-- <main-contents></main-contents> -->
     </el-container>
@@ -62,17 +65,34 @@ export default {
                 },
             }
         ],
+        // 存放图表数据的数组，由SideBar传入
         updatesignal:true,
+        updateallsignal:true,
         darkMode:false,
+        selectedChartIndex:-1
     }
   },
   methods: {
-    chartUpdated(chartOptionList){
-        this.optionList=chartOptionList
+    chartUpdated(chartOptionList,selectedChartIndex){
+        this.optionList[selectedChartIndex]=chartOptionList[selectedChartIndex]
+        // 更新选定图表的数据
         this.updatesignal=!this.updatesignal
+        // 给HeadBarAndMainContents发送选定图表需要更新的信号
+        this.selectedChartIndex = selectedChartIndex
+        // 更新当前选中的图表Index
+    },
+    // 更新一张图表
+    allUpdated(chartOptionList,selectedChartIndex){
+        this.optionList = chartOptionList
+        // 更新全部图表的数据
+        this.updateallsignal=!this.updateallsignal
+        // 给HeadBarAndMainContents发送所有图表需要更新的信号
+        this.selectedChartIndex = selectedChartIndex
+        // 更新当前选中的图表Index
     },
     handleThemeChange(theme){
         this.darkMode = theme
+        // 接受来自HeadBarAndMainContents的黑夜/白天模式
     }
   },
 }

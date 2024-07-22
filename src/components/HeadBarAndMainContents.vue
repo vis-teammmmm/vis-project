@@ -23,13 +23,18 @@
                 <el-icon style="color: aliceblue;font-size: large" v-else class="el-icon--right">
                     <Sunny />
                 </el-icon>
+                <!-- 亮/暗模式下按钮的内容不同 -->
             </el-button>
         </el-header>
         <el-container>
             <el-main>
-                <div id="chartindex"
-                    :style="{ width: '100%', height: '100%' }"
+                <div
+                    v-for="chartIndex in chartIndexList"
+                    :key="chartIndex"
+                    :id="chartIndex"
+                    :style="{ width: '50%', height: '50%' }"
                 ></div>
+                <!-- 遍历绘画图表 -->
             </el-main>
         </el-container>
     </el-container>
@@ -50,32 +55,87 @@
         data() {
             return{
                 darkmode:false,
+                // 亮/暗模式，false为亮
+                chartIndexList:[]
+                // 存放图表Index的数组
             }
         },
         methods:{
             changeTheme(){
                 toggleDark()
+                // 改变亮暗
                 this.darkmode = !this.darkmode
-                this.createChart()
+                this.updateAll()
+                // 更新所有图表
                 this.$emit('themeChanged',this.darkmode)
+                // 传输亮暗模式已经发生改变的信息
             },
-            createChart(){
-                var chartDom = document.getElementById('chartindex')
-                if(this.myChart){
-                    this.myChart.dispose()
+            
+            updateChart(index) {
+                if(index<0){
+                    console.log('No selectedChart yet')
+                    return
+                    // 防止还没有选中图表的时候的错误更新
                 }
-                var myChart
-                if(this.darkmode === false){
-                    myChart = echarts.init(chartDom)
+                var chartDom = document.getElementById(index);
+                // 根据index建立存放图表的文档对象
+                if (!chartDom) {
+                    console.error('DOM element with id '+ index +' not found!');
+                    console.log(this.chartIndexList[index])
+                    return;
+                    // 不要删掉这里,提前return可以避免出错时网页直接崩溃
                 }
-                else{
-                    myChart = echarts.init(chartDom,'dark')
+
+
+                if (!Array.isArray(this.myChart)) {
+                    this.myChart = [];
+                    console.log('Transform myChart to Array')
                 }
-                this.myChart = myChart
-                var option = this.optionList[0]
-                option && myChart.setOption(option)
+                // 确保this.myChart是数组
+
+                if (this.myChart[index]) {
+                    this.myChart[index].dispose();
+                    console.log('myChart[' + index + '] disposed')
+                }
+                // 如果该索引的图表实例已存在，则销毁它
+
+                var myChart;
+                if (this.darkmode === false) {
+                    myChart = echarts.init(chartDom);
+                } else {
+                    myChart = echarts.init(chartDom, 'dark');
+                }
+                // 初始化新的图表实例，并使其与亮暗模式适应
+
+                this.myChart[index] = myChart;
+                // 将新的图表实例存储在数组中
+
+
+                var option = this.optionList[index];
+                if (option) {
+                    myChart.setOption(option);
+                }
+                // 获取并设置对应的图表选项
+            },
+            updateAll(){
+                let i = 0;
+                if(this.optionList){
+                    while(i<this.optionList.length){
+                        this.updateChart(i);
+                        console.log('updateChart: '+ i)
+                        // 遍历更新所有图表
+                        ++i;
+                    }
+                }
+                if(this.myChart && this.myChart[i]){
+                    this.myChart[i].dispose();
+                    this.chartIndexList.pop();
+                    console.log('mychart '+i+' disposed')
+                    // 如果本次全体更新由删除引起，删除掉最后一个元素
+                }
             }
         },
+
         props:{
             optionList:{
                 type:Array,
@@ -109,15 +169,30 @@
                     }
                 ])
             },
+            // 接受图表参数的列表
             updatesignal:Boolean,
+            // 提示更新单个图表
+            updateallsignal:Boolean,
+            // 提示更新所有图表
+            selectedChartIndex:Number
+            // 提示当前选中的图表
         },
         watch:{
             updatesignal: function(){
-                this.createChart()
-                console.log('watched')
-                console.log(this.optionList[0])
+                this.updateChart(this.selectedChartIndex)
+                // 更新单个图表
             },
-
+            selectedChartIndex: function(){
+                if(this.selectedChartIndex >= 0)
+                {
+                    this.chartIndexList[this.selectedChartIndex]=this.selectedChartIndex
+                }
+                // 更新chartIndexList数组
+            },
+            updateallsignal: function(){
+                this.updateAll()
+                // 更新所有图表
+            }
         }
     }
 </script>

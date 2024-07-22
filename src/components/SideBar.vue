@@ -3,33 +3,56 @@
     <el-aside width="200px" style="font-weight: bold">
         <el-scrollbar>
             <el-menu>
-
-                <el-upload
-                    v-model:file-list="fileList"
-                    :class="upload-demo"
-                    action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
-                    multiple
-                    index="1"
-                    :on-preview="handlePreview"
-                    :on-remove="handleRemove"
-                    :before-remove="beforeRemove"
-                    :limit="3"
-                    :on-exceed="handleExceed"
-                    accept=".csv"
-                >
-                    <el-button color="#626aef" style="background-color: #626aef;">
-                        <!-- 保持颜色 -->
-                        <span style="color: aliceblue;">上传文件</span>
-                        <el-icon class="el-icon--right" style="color: aliceblue;">
-                            <DocumentAdd />
-                        </el-icon>
-                    </el-button>
-                    <template #tip >
-                    <div class="el-upload__tip" >
-                        仅支持.csv文件
+                <div index="1">
+                    <el-upload
+                        v-model:file-list="fileList"
+                        :class="upload-demo"
+                        action="http://localhost:3000/upload"
+                        multiple
+                        index="1"
+                        :on-preview="handlePreview"
+                        :on-remove="handleRemove"
+                        :on-success="handleSuccess"
+                        :on-error="handleError"
+                        :before-remove="beforeRemove"
+                        :limit="3"
+                        :on-exceed="handleExceed"
+                        accept=".csv"
+                    >
+                        <el-button color="#626aef" style="background-color: #626aef;">
+                            <!-- 保持颜色 -->
+                            <span style="color: aliceblue;">上传文件</span>
+                            <el-icon class="el-icon--right" style="color: aliceblue;">
+                                <DocumentAdd />
+                            </el-icon>
+                        </el-button>
+                        <template #tip >
+                        <div class="el-upload__tip" >
+                            仅支持.csv文件
+                        </div>
+                        </template>
+                    </el-upload>
+                    <br>
+                    <div>
+                        <span class="inputtext">选中文件 </span>
+                        <el-select
+                            v-model="selectedFileUid"
+                            placeholder='待选择'
+                            style="width: 100px;"
+                            @change="updateFileDataset"
+                        >
+                            <el-option
+                                v-for="file in fileList"
+                                :key="file.uid"
+                                :label="file.name"
+                                :value="file.uid"
+                                :class="{'myoption': darkMode == true}"
+                            />
+                        </el-select>
                     </div>
-                    </template>
-                </el-upload>
+                    <br>
+                </div>
+
                 <!-- 上传文件 -->
 
                 <el-sub-menu index="2">
@@ -41,12 +64,14 @@
                         :key="chartNum.id"
                         @click="changeSelectedChartNum(chartNum)"
                         :class="{'selected':selectedChartNum===chartNum}">
+                        <!-- 列举所有的视图，点击切换选中的视图 -->
                         <span v-if="chartOptionList[chartNum-1].title.text===''">
                             视图{{ chartNum }}
                         </span>
                         <span v-else>
                             {{ chartOptionList[chartNum-1].title.text }}
                         </span>
+                        <!-- 依据当前是否有视图进行逻辑判断，防止报错 -->
                         <span style="width: 100px;">
                         </span>
                         <span>
@@ -56,6 +81,7 @@
                                 <circle-close></circle-close>
                             </el-icon>
                         </span>
+                        <!-- 提供删除视图选项 -->
                     </el-menu-item>
                     <el-menu-item
                         class="mybutton"
@@ -63,8 +89,8 @@
                     >
                         添加视图
                     </el-menu-item>
+                    <!-- 提供添加视图选项 -->
                 </el-sub-menu>
-                <!-- 选择视图 -->
 
                 <el-sub-menu index="3">
                     <template #title>
@@ -85,12 +111,14 @@
                     <el-menu-item @click="mapChartSelected" :class="{'selected':selectedChartType==='map'}">
                         地图
                     </el-menu-item>
+                    <!-- 列举视图类型，允许选择 -->
                 </el-sub-menu>
-                <!-- 选择视图类型 -->
+
                 <el-sub-menu index="4" v-if="selectedChartNum>0">
                     <template #title>
                         可选绘图参数
                     </template>
+                    <!-- 列举一些共用的且可选可不选的绘图参数，参数默认值在组件内给出 -->
                     <br>
                     <div>
                         <span class="inputtext">标题内容 </span>
@@ -101,6 +129,7 @@
                             clearable
                             @change="updateChartData"
                         />
+                        <!-- 每当参数被改变时，更新当前选中的图表数据 -->
                     </div>
                     <br>
                     <div>
@@ -118,6 +147,7 @@
                                 :value="leftOption.value"
                                 :class="{'myoption': darkMode == true}"
                             />
+                            <!-- 根据黑夜模式与否修改option单选框的样式，防止对比度过低 -->
                         </el-select>
                     </div>
                     <br>
@@ -162,6 +192,8 @@
                     <template #title>
                         必选绘图参数
                     </template>
+
+                    <!-- 依据绘图种类不同，提供不同的必选绘图参数 -->
                     <div v-show="selectedChartType==='pie'">
                         <br>
                         <div>
@@ -173,7 +205,7 @@
                                 @change="updateChartData"
                             >
                                 <el-option
-                                    v-for="keyword in dataSet.source[0]"
+                                    v-for="keyword in chartOptionList[selectedChartNum-1].dataset.source[0]"
                                     :key="keyword"
                                     :label="keyword"
                                     :value="keyword"
@@ -191,7 +223,7 @@
                                 @change="updateChartData"
                             >
                                 <el-option
-                                    v-for="keyword in dataSet.source[0]"
+                                    v-for="keyword in chartOptionList[selectedChartNum-1].dataset.source[0]"
                                     :key="keyword"
                                     :label="keyword"
                                     :value="keyword"
@@ -199,9 +231,9 @@
                                 />
                             </el-select>
                         </div>
-
                         <br>
                     </div>
+
                 </el-sub-menu>
             </el-menu>
         </el-scrollbar>
@@ -221,22 +253,17 @@
         data() {
             return {
                 selectedChartNum:0,
+                // 当前已选中的图表是第几个，值为index+1
                 chartNumList:[],
                 //chartNumList内的元素从1开始
-                selectedChartType:'pie',
-                dataSet:{
+                fileList: [],
+                fileDataMap: [], // 存储文件和对应数据的数组，里面每个元素有两个子元素，uid和data，分别表示文件id和文件对应的数据
+                selectedFileUid:0,
+                fileDataset:{
                     source:[
-                        ['score', 'amount', 'product'],
-                        [89.3, 58212, 'Matcha Latte'],
-                        [57.1, 78254, 'Milk Tea'],
-                        [74.4, 41032, 'Cheese Cocoa'],
-                        [50.1, 12755, 'Cheese Brownie'],
-                        [89.7, 20145, 'Matcha Cocoa'],
-                        [68.1, 79146, 'Tea'],
-                        [19.6, 91852, 'Orange Juice'],
-                        [10.6, 101852, 'Lemon Juice'],
-                        [32.7, 20112, 'Walnut Brownie']
+                        [],
                     ]
+                    // 存放选中文件的数据，在addChart时被调用
                 },
                 chartOptionList:[
                     {
@@ -244,27 +271,22 @@
                             text:'',
                             left:'center'
                         },
+                        // 图表题目
                         tooltip:{
                             trigger:'item'
                         },
+                        // 提示框
                         legend:{
                             left:'right',
                             orient:'vertical',
                         },
+                        // 图例
                         dataset:{
                             source:[
-                                ['score', 'amount', 'product'],
-                                [89.3, 58212, 'Matcha Latte'],
-                                [57.1, 78254, 'Milk Tea'],
-                                [74.4, 41032, 'Cheese Cocoa'],
-                                [50.1, 12755, 'Cheese Brownie'],
-                                [89.7, 20145, 'Matcha Cocoa'],
-                                [68.1, 79146, 'Tea'],
-                                [19.6, 91852, 'Orange Juice'],
-                                [10.6, 101852, 'Lemon Juice'],
-                                [32.7, 20112, 'Walnut Brownie']
+                                [],
                             ]
                         },
+                        // 数据集
                         series:
                         {
                             type:'pie',
@@ -275,6 +297,7 @@
                                 y:'',
                             }
                         },
+                        // 种类
                     }
                 ],
                 leftOptions:[
@@ -301,89 +324,157 @@
                         label:'垂直'
                     }
                 ]
+                // 用于列举可选参数的列表
             }
         },
         methods: {
             changeSelectedChartNum(num){
                 this.selectedChartNum = num
             },
-            selectChart(idSelected){
-                this.selectedChartNum=idSelected
+            // 更新当前选中的图表序号
+            updateFileDataset(){
+                const index = this.fileDataMap.findIndex(item => item.uid === this.selectedFileUid)
+                if(index != -1){
+                    this.fileDataset = this.fileDataMap[index].dataset
+                }
+                else{
+                    this.$message.warning(`未识别到文件！`);
+                }
             },
-            // 选图表事件
             deleteChart(index){
                 this.chartNumList.splice(index,1)
+                // 在chartNumList中删除
+                console.log('After Deletion, the length of chartNumList is '+this.chartOptionList.length)
                 for(let i = index ; i< this.chartNumList.length;i++){
                     this.chartNumList[i]--
                 }
+                // 修改chartNumList的值保持正常
+                if(index==this.selectedChartNum-1){
+                    this.selectedChartNum--
+                }
+                // 如果删除的是最后一张表，且当前选中的也是最后一张表，改选前面一张表
                 this.chartOptionList.splice(index,1)
+                // 在chartOptionList中删除
+                console.log('After Deletion, the length of chartOptionList is '+this.chartOptionList.length)
+                this.updateAll()
+                // 删除某张图表可能改变图表顺序与布局，因此更新所有图表
             },
-
+            // 删除指定index的图表
             pieChartSelected(){
-                this.selectedChartType='pie'
-                //this.$emit('setChartType','pie')
+                if(this.selectedChartNum>0)
+                    this.chartOptionList[this.selectedChartNum-1].series.type ='pie'
             },
             barChartSelected(){
-                this.selectedChartType='bar'
-                // this.$emit('setChartType','bar')
+                if(this.selectedChartNum>0)
+                    this.chartOptionList[this.selectedChartNum-1].series.type ='bar'
             },
             lineChartSelected(){
-                this.selectedChartType='line'
-                // this.$emit('setChartType','line')
+                if(this.selectedChartNum>0)
+                    this.chartOptionList[this.selectedChartNum-1].series.type ='line'
             },
             scatterChartSelected(){
-                this.selectedChartType='scatter'
-                // this.$emit('setChartType','scatter')
+                if(this.selectedChartNum>0)
+                    this.chartOptionList[this.selectedChartNum-1].series.type ='scatter'
             },
             mapChartSelected(){
-                this.selectedChartType='map'
-                // this.$emit('setChartType','map')
+                if(this.selectedChartNum>0)
+                    this.chartOptionList[this.selectedChartNum-1].series.type ='map'
             },
-            // 选图表类型事件
+            // 改变当前选中的图表的种类
             addChart(){
-                let newPieChartOption = {
-                    title: {
-                        text: '',
-                        left: 'center',
-                    },
-                    tooltip: {
-                        trigger: 'item'
-                    },
-                    legend: {
-                        left: 'right',
-                        orient: 'vertical',
-                    },
-                    dataset:{
-                        source:[
-                            []
-                        ]
-                    },
-                    series: {
-                        type: 'pie',
-                        encode: {
-                            itemName: '', // 假设 source 数组的第一个元素是类别名
-                            value: '',    // 假设 source 数组的第二个元素是值
-                            x: '',
-                            y: ''
-                        }
-                    }
-                };
-                newPieChartOption.dataset=this.dataSet
-                this.chartOptionList.push(newPieChartOption)
-                if(this.chartNumList.length > 0){
-                    this.chartNumList.push(this.chartNumList[this.chartNumList.length-1]+1)
+                if(this.selectedFileUid==0){
+                    this.$message.warning(`请先选中文件！`);
                 }
                 else{
-                    this.chartNumList = [1]
+                    if(this.chartNumList.length != this.chartOptionList.length){
+                        this.chartOptionList.pop()
+                    }
+                    this.chartNumList.push(this.chartNumList.length+1)
+                    // 在chartNumList中添加
+                    let newChartOption = {
+                        title: {
+                            text: '',
+                            left: 'center',
+                        },
+                        tooltip: {
+                            trigger: 'item'
+                        },
+                        legend: {
+                            left: 'right',
+                            orient: 'vertical',
+                        },
+                        dataset:{
+                            source:[
+                                []
+                            ]
+                        },
+                        series: {
+                            type: 'pie',
+                            encode: {
+                                itemName: '',
+                                value: '',
+                                x: '',
+                                y: ''
+                            }
+                        }
+                    };
+                    newChartOption.dataset=this.fileDataset
+                    this.chartOptionList.push(newChartOption)
+                    console.log('addChart finished.',this.chartOptionList,this.chartNumList)
+                    //在chartOptionList中添加
                 }
-
+                this.updateAll()
+                // 由于增添图表可能导致图表展示的布局改变，因此更新所有图表
             },
+            updateAll(){
+                this.$emit('updateAll',this.chartOptionList, this.selectedChartNum-1)
+            },
+            // 发送事件更新所有图表
             updateChartData(){
-                this.$emit('updateChart', this.chartOptionList)
-            }
+                this.$emit('updateChart', this.chartOptionList, this.selectedChartNum-1)
+            },
+            // 发送事件更新单张图表
+            handlePreview(file) {
+                console.log('preview', file);
+            },
+            handleRemove(file, fileList) { // 在删除文件的同时，将组件内的数据也删除
+                console.log('remove', file, fileList);
+                const index = this.fileDataMap.findIndex(item => item.uid === file.uid)
+                if(index !== -1){
+                    this.fileDataMap.splice(index, 1)
+                }
+            },
+            beforeRemove(file) {
+                return this.$confirm(`确定移除 ${file.name}?`);
+            },
+            handleSuccess(response, file, fileList) { // 上传成功后，将文件和对应数据存储到组件内的数组中
+                console.log('success', response, file, fileList);
+                this.$message.success(`${file.name} 上传成功`);
+                this.fileDataMap.push({
+                    uid: file.uid,
+                    dataset: {source: response.data},
+                });
+                console.log('存储的数据:', this.fileDataMap);
+            },
+            handleError(err, file, fileList) {
+                console.log('error', err, file, fileList);
+                this.$message.error(`${file.name} 上传失败`);
+            },
+            submitUpload() {
+                this.$refs.upload.submit();
+            },
+            handleExceed() {
+                this.$message.warning(`最多只能上传 3 个文件.`);
+            },
         },
         props:{
             darkMode:Boolean
+            // 接受当前的页面风格是黑夜还是白天，false为白天
+        },
+        computed:{
+            selectedChartType(){
+                return this.selectedChartNum>0? this.chartOptionList[this.selectedChartNum-1].series.type : ''
+            }
         }
     }
 </script>
