@@ -1,16 +1,20 @@
 <template>
-    <el-container class="layout-container-demo">
+    <el-container class="layout-container-demo" style="height: 900px;">
         <side-bar
             @updateChart="chartUpdated"
             @updateAll="allUpdated"
+            @updateSelectedFileUid="selectedFileUidUpdated"
             :darkMode="darkMode"
+            :showSideBar="showSideBar"
         />
         <head-bar-and-main-contents
             :optionList="optionList"
             :updatesignal="updatesignal"
             :updateallsignal="updateallsignal"
             @themeChanged="handleThemeChange"
+            @updateSideBar="sideBarUpdated"
             :selectedChartIndex="selectedChartIndex"
+            :groupName="groupName"
         ></head-bar-and-main-contents>
         <!-- <main-contents></main-contents> -->
     </el-container>
@@ -36,43 +40,55 @@ export default {
   data() {
     return {
         optionList:[
-            {
-                title:{
-                    text:'',
-                    left:'center',
-                },
-                tooltip:{
-                    trigger:'item'
-                },
-                legend:{
-                    left:'right',
-                    orient:'vertical',
-                },
-                dataset:{
-                    source:[
-                        [],
-                    ]
-                },
-                series:
-                {
-                    type:'pie',
-                    encode:{
-                        itemName:'',
-                        value:'',
-                        x:'',
-                        y:'',
-                    }
-                },
-            }
+            // {
+            //     group:'',
+            //     title:{
+            //         text:'',
+            //         left:'center',
+            //     },
+            //     tooltip:{
+            //         trigger:'item'
+            //     },
+            //     legend:{
+            //         left:'right',
+            //         orient:'vertical',
+            //     },
+            //     dataset:{
+            //         source:[
+            //             [],
+            //         ]
+            //     },
+            //     xAxis:{
+            //         type:''
+            //     },
+            //     yAxis:{
+            //     },
+            //     series:
+            //     {
+            //         type:'pie',
+            //         encode:{
+            //             itemName:'',
+            //             value:'',
+            //             x:'',
+            //             y:'',
+            //         }
+            //     },
+            // }
         ],
+        // optionList:[{}],
         // 存放图表数据的数组，由SideBar传入
         updatesignal:true,
         updateallsignal:true,
         darkMode:false,
-        selectedChartIndex:-1
+        selectedChartIndex:-1,
+        groupName:'',
+        showSideBar:'true'
     }
   },
   methods: {
+    sideBarUpdated(flag){
+        this.showSideBar = flag
+    },
     chartUpdated(chartOptionList,selectedChartIndex){
         this.optionList[selectedChartIndex]=chartOptionList[selectedChartIndex]
         // 更新选定图表的数据
@@ -93,6 +109,9 @@ export default {
     handleThemeChange(theme){
         this.darkMode = theme
         // 接受来自HeadBarAndMainContents的黑夜/白天模式
+    },
+    selectedFileUidUpdated(selectedFileUid){
+        this.groupName=selectedFileUid.toString()
     }
   },
 }

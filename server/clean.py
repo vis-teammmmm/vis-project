@@ -25,8 +25,14 @@ def read_and_clean_csv(file_path):
             
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
+                # df.loc[:, col] = pd.to_datetime(df.loc[:, col])
 
             except ValueError:
+                pass
+
+            try:
+                df[col] = df[col].apply(lambda x: pd.to_datetime(x).date() if isinstance(x, str) else x)
+            except (ValueError, TypeError):
                 pass
 
     return df
@@ -34,7 +40,7 @@ def read_and_clean_csv(file_path):
 def main(file_path):
     output_path = "uploads/output.json"
     df = read_and_clean_csv(file_path)
-    df.to_json(output_path, orient='records', force_ascii=False)
+    df.to_json(output_path, orient='records', date_format='iso', force_ascii=False)
     print(output_path)  # 输出文件路径
 
 if __name__ == "__main__":

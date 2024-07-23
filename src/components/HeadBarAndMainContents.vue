@@ -25,16 +25,27 @@
                 </el-icon>
                 <!-- 亮/暗模式下按钮的内容不同 -->
             </el-button>
+
+            <el-button color="#626aef" @click="changeSideBar" class="border-none w-full bg-transparent cursor-pointer" style="background-color: #626aef; width: 8em; height: 3em">
+                <!-- 边栏显示按钮 -->
+                 <span style="color: aliceblue; font-weight: bold; font-size: medium;">
+                    {{ showSideBar == true ? '隐藏' : '显示' }}侧栏
+                 </span>
+
+            </el-button>
         </el-header>
         <el-container>
             <el-main>
-                <div
-                    v-for="chartIndex in chartIndexList"
-                    :key="chartIndex"
-                    :id="chartIndex"
-                    :style="{ width: '50%', height: '50%' }"
-                ></div>
-                <!-- 遍历绘画图表 -->
+                <div class="chart-container">
+                    <div
+                        v-for="chartIndex in chartIndexList"
+                        :key="chartIndex"
+                        :id="chartIndex"
+                        class="chart-item"
+                    >
+                    </div>
+                    <!-- 遍历绘画图表 -->
+                </div>
             </el-main>
         </el-container>
     </el-container>
@@ -56,8 +67,9 @@
             return{
                 darkmode:false,
                 // 亮/暗模式，false为亮
-                chartIndexList:[]
+                chartIndexList:[],
                 // 存放图表Index的数组
+                showSideBar:true,
             }
         },
         methods:{
@@ -70,7 +82,10 @@
                 this.$emit('themeChanged',this.darkmode)
                 // 传输亮暗模式已经发生改变的信息
             },
-            
+            changeSideBar(){
+                this.showSideBar = !this.showSideBar
+                this.$emit('updateSideBar',this.showSideBar)
+            },
             updateChart(index) {
                 if(index<0){
                     console.log('No selectedChart yet')
@@ -80,8 +95,8 @@
                 var chartDom = document.getElementById(index);
                 // 根据index建立存放图表的文档对象
                 if (!chartDom) {
-                    console.error('DOM element with id '+ index +' not found!');
-                    console.log(this.chartIndexList[index])
+                    console.log('DOM element with id '+ index +' not found!');
+                    //console.log(this.chartIndexList[index])
                     return;
                     // 不要删掉这里,提前return可以避免出错时网页直接崩溃
                 }
@@ -106,15 +121,30 @@
                     myChart = echarts.init(chartDom, 'dark');
                 }
                 // 初始化新的图表实例，并使其与亮暗模式适应
-
+                var option = this.optionList[index];
                 this.myChart[index] = myChart;
                 // 将新的图表实例存储在数组中
-
-
-                var option = this.optionList[index];
                 if (option) {
-                    myChart.setOption(option);
+                    if(option.series[0]){
+                        if((option.series[0].encode.x && option.series[0].encode.y) || (option.series[0].encode.itemName && option.series[0].encode.value)){
+                            myChart.group=option.group
+                            myChart.setOption(option);
+                            echarts.connect(option.group)
+                            console.log('Connect group:',this.groupName)
+                        }
+                        else{
+                            console.log('图表参数不完整')
+                            console.log(option.series[0])
+                        }
+                    }
+                    else{
+                        console.log('图表参数不完整，不存在serie')
+                    }
                 }
+                else{
+                    console.log('图表参数不完整，不存在option')
+                }
+
                 // 获取并设置对应的图表选项
             },
             updateAll(){
@@ -137,45 +167,56 @@
         },
 
         props:{
-            optionList:{
-                type:Array,
-                default:()=>([
-                    {
-                        title:{
-                            text:'',
-                            left:'',
-                        },
-                        tooltip:{
-                            trigger:''
-                        },
-                        legend:{
-                            left:'',
-                            orient:'',
-                        },
-                        dataset:{
-                            source:[
-                                []
-                            ]
-                        },
-                        series:{
-                            type:'',
-                            encode:{
-                                itemName:'',
-                                value:'',
-                                x:'',
-                                y:'',
-                            }
-                        }
-                    }
-                ])
-            },
+            // optionList:{
+            //     type:Array,
+            //     default:()=>([
+            //         {
+            //             group:'',
+            //             title:{
+            //                 text:'',
+            //                 left:'',
+            //             },
+            //             tooltip:{
+            //                 trigger:''
+            //             },
+            //             legend:{
+            //                 left:'',
+            //                 orient:'',
+            //             },
+            //             dataset:{
+            //                 source:[
+            //                     []
+            //                 ]
+            //             },
+            //             xAxis:{
+            //                 type:''
+            //             },
+            //             yAxis:{
+
+            //             },
+            //             series:[
+            //                 {
+            //                     type:'',
+            //                     encode:{
+            //                         itemName:'',
+            //                         value:'',
+            //                         x:'',
+            //                         y:'',
+            //                     }
+            //                 }
+            //             ]
+            //         }
+            //     ])
+            // },
+            optionList:Array,
             // 接受图表参数的列表
             updatesignal:Boolean,
             // 提示更新单个图表
             updateallsignal:Boolean,
             // 提示更新所有图表
-            selectedChartIndex:Number
+            selectedChartIndex:Number,
             // 提示当前选中的图表
+            groupName:String
         },
         watch:{
             updatesignal: function(){
@@ -196,3 +237,41 @@
         }
     }
 </script>
+<style scoped>
+     .chart-container {
+        display: grid;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .chart-item {
+        width: 100%;
+        height: 400px;
+    }
+
+    /* Default layout: one chart per row */
+    .chart-container {
+        grid-template-columns: 1fr;
+    }
+
+    /* Two charts per row */
+    @media (min-width: 600px) {
+        .chart-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Three charts per row */
+    @media (min-width: 900px) {
+        .chart-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* Four charts per row */
+    @media (min-width: 1200px) {
+        .chart-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
