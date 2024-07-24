@@ -1,11 +1,11 @@
 <template>
-    <el-container class="layout-container-demo" style="height: 900px;">
+    <el-container class="layout-container-demo" style="height: 92vh;width: 99vw;">
         <side-bar
             @updateChart="chartUpdated"
             @updateAll="allUpdated"
-            @updateSelectedFileUid="selectedFileUidUpdated"
             :darkMode="darkMode"
             :showSideBar="showSideBar"
+            style="width: 15vw;height: 92vh;"
         />
         <head-bar-and-main-contents
             :optionList="optionList"
@@ -15,14 +15,12 @@
             @updateSideBar="sideBarUpdated"
             :selectedChartIndex="selectedChartIndex"
             :groupName="groupName"
+            style="width: 84vw;height: 92vh;"
         ></head-bar-and-main-contents>
-        <!-- <main-contents></main-contents> -->
     </el-container>
 </template>
 
 <script>
-
-//import { isDark } from './components/composables';
 import HeadBarAndMainContents from './components/HeadBarAndMainContents.vue'
 // 导入头栏
 import SideBar from './components/SideBar.vue'
@@ -34,55 +32,21 @@ export default {
   components: {
     HeadBarAndMainContents,
     SideBar,
-    //MainContents,
     //使用组件
   },
   data() {
     return {
-        optionList:[
-            // {
-            //     group:'',
-            //     title:{
-            //         text:'',
-            //         left:'center',
-            //     },
-            //     tooltip:{
-            //         trigger:'item'
-            //     },
-            //     legend:{
-            //         left:'right',
-            //         orient:'vertical',
-            //     },
-            //     dataset:{
-            //         source:[
-            //             [],
-            //         ]
-            //     },
-            //     xAxis:{
-            //         type:''
-            //     },
-            //     yAxis:{
-            //     },
-            //     series:
-            //     {
-            //         type:'pie',
-            //         encode:{
-            //             itemName:'',
-            //             value:'',
-            //             x:'',
-            //             y:'',
-            //         }
-            //     },
-            // }
-        ],
-        // optionList:[{}],
+        optionList:[],
         // 存放图表数据的数组，由SideBar传入
         updatesignal:true,
+        // 单表更新信号
         updateallsignal:true,
+        // 全部更新信号
         darkMode:false,
         selectedChartIndex:-1,
+        // 选中的图表序号
         groupName:'',
-        showSideBar:'true'
+        showSideBar:true,
     }
   },
   methods: {
@@ -92,27 +56,25 @@ export default {
     chartUpdated(chartOptionList,selectedChartIndex){
         this.optionList[selectedChartIndex]=chartOptionList[selectedChartIndex]
         // 更新选定图表的数据
-        this.updatesignal=!this.updatesignal
-        // 给HeadBarAndMainContents发送选定图表需要更新的信号
         this.selectedChartIndex = selectedChartIndex
         // 更新当前选中的图表Index
+        this.updatesignal=!this.updatesignal
+        // 给HeadBarAndMainContents发送选定图表需要更新的信号
     },
     // 更新一张图表
     allUpdated(chartOptionList,selectedChartIndex){
         this.optionList = chartOptionList
         // 更新全部图表的数据
-        this.updateallsignal=!this.updateallsignal
-        // 给HeadBarAndMainContents发送所有图表需要更新的信号
+        //更新删除信息
         this.selectedChartIndex = selectedChartIndex
         // 更新当前选中的图表Index
+        this.updateallsignal=!this.updateallsignal
+        // 给HeadBarAndMainContents发送所有图表需要更新的信号
     },
     handleThemeChange(theme){
         this.darkMode = theme
         // 接受来自HeadBarAndMainContents的黑夜/白天模式
     },
-    selectedFileUidUpdated(selectedFileUid){
-        this.groupName=selectedFileUid.toString()
-    }
   },
 }
 </script>
