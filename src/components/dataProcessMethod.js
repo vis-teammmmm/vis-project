@@ -84,7 +84,7 @@ function dataProcess(series, dataset, method){
     else if(method === 'Std'){
         processedData = standardDeviationByCategory(data, keyIndex, processIndeices);
     }
-    //console.log('分组求和后的数据：', processedData);
+    console.log('处理后的数据：', processedData);
     return {source: processedData};
 }
 
@@ -94,11 +94,13 @@ function sumByCategory(data, keyIndex, sumIndeices)
     const sumMap = data.slice(1).reduce((acc, row) => {
         const key = row[keyIndex];
         if(!acc.has(key)){
-            acc.set(key,sumIndeices.map(() => 0));
+            acc.set(key,sumIndeices.map(() => null));
         }
         const sumArray = acc.get(key);
         sumIndeices.forEach((index, i) => {
-            sumArray[i] += row[index];
+            if(row[index] !== null){
+                sumArray[i] += row[index];
+            }
         });
         return acc;
     }, new Map());
@@ -119,8 +121,10 @@ function countByCategory(data, keyIndex, countIndeices)
             acc.set(key,countIndeices.map(() => 0));
         }
         const countArray = acc.get(key);
-        for(let i = 0; i < countIndeices.length; i++){
-            countArray[i] += 1;
+        for(let i = 0; i < countIndeices.length; i++){ // 数数允许数成0个
+            if(row[countIndeices[i]] !== null){
+                countArray[i] += 1;
+            }
         }
         return acc;
     }, new Map());
@@ -139,18 +143,27 @@ function averageByCategory(data, keyIndex, valueIndices) {
     data.slice(1).forEach(row => {
         const key = row[keyIndex];
         if (!countMap.has(key)) {
-            countMap.set(key, valueIndices.map(() => ({ sum: 0, count: 0 })));
+            countMap.set(key, valueIndices.map(() => ({ sum: null, count: 0 })));
         }
         const averages = countMap.get(key);
         valueIndices.forEach((index, i) => {
-            averages[i].sum += row[index];
-            averages[i].count += 1;
+            if(row[index] !== null){
+                averages[i].sum += row[index];
+                averages[i].count += 1;
+            }
         });
     });
 
     const output = [newHeaders];
     countMap.forEach((averages, key) => {
-        const averagesRow = averages.map(avg => avg.sum / avg.count);
+        const averagesRow = averages.map(avg => {
+            if(avg.count === 0){
+                return null;
+            }
+            else{
+                return avg.sum / avg.count;
+            }
+        });
         output.push([key, ...averagesRow]);
     });
     return output;
@@ -163,21 +176,28 @@ function varianceByCategory(data, keyIndex, valueIndices) {
     data.slice(1).forEach(row => {
         const key = row[keyIndex];
         if (!statsMap.has(key)) {
-            statsMap.set(key, valueIndices.map(() => ({ sum: 0, sumSq: 0, count: 0 })));
+            statsMap.set(key, valueIndices.map(() => ({ sum: null, sumSq: null, count: 0 })));
         }
         const stats = statsMap.get(key);
         valueIndices.forEach((index, i) => {
-            stats[i].sum += row[index];
-            stats[i].sumSq += row[index] * row[index];
-            stats[i].count += 1;
+            if(row[index] !== null){
+                stats[i].sum += row[index];
+                stats[i].sumSq += row[index] * row[index];
+                stats[i].count += 1;
+            }
         });
     });
 
     const output = [newHeaders];
     statsMap.forEach((stats, key) => {
         const varianceRow = stats.map(stat => {
-            const mean = stat.sum / stat.count;
-            return (stat.sumSq - mean * stat.sum) / stat.count;
+            if(stat.count === 0){
+                return null;
+            }
+            else{
+                const mean = stat.sum / stat.count;
+                return (stat.sumSq - mean * stat.sum) / stat.count;
+            }
         });
         output.push([key, ...varianceRow]);
     });
@@ -191,21 +211,28 @@ function standardDeviationByCategory(data, keyIndex, valueIndices) {
     data.slice(1).forEach(row => {
         const key = row[keyIndex];
         if (!statsMap.has(key)) {
-            statsMap.set(key, valueIndices.map(() => ({ sum: 0, sumSq: 0, count: 0 })));
+            statsMap.set(key, valueIndices.map(() => ({ sum: null, sumSq: null, count: 0 })));
         }
         const stats = statsMap.get(key);
         valueIndices.forEach((index, i) => {
-            stats[i].sum += row[index];
-            stats[i].sumSq += row[index] * row[index];
-            stats[i].count += 1;
+            if(row[index] !== null){
+                stats[i].sum += row[index];
+                stats[i].sumSq += row[index] * row[index];
+                stats[i].count += 1;
+            }
         });
     });
 
     const output = [newHeaders];
     statsMap.forEach((stats, key) => {
         const stddevRow = stats.map(stat => {
-            const mean = stat.sum / stat.count;
-            return Math.sqrt((stat.sumSq - mean * stat.sum) / stat.count);
+            if(stat.count === 0){
+                return null;
+            }
+            else{
+                const mean = stat.sum / stat.count;
+                return Math.sqrt((stat.sumSq - mean * stat.sum) / stat.count);
+            }
         });
         output.push([key, ...stddevRow]);
     });

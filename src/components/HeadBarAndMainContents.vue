@@ -110,6 +110,29 @@
                 this.$emit('updateSideBar',this.showSideBar)
                 // 改变侧栏显示
             },
+            swapAxes(option) {
+                let newOption = JSON.parse(JSON.stringify(option));
+                //console.log('js option:',newOption)
+                // 创建新的 option 对象，深拷贝以防止修改原始对象
+                //const tempAxis = newOption.xAxis
+                newOption.xAxis = option.yAxis
+                newOption.yAxis = option.xAxis
+                // 交换 xAxis 和 yAxis
+                newOption.series.forEach(serie => {
+                    if (serie.encode) {
+                        const tempEncode = serie.encode.x
+                        serie.encode.x = serie.encode.y
+                        serie.encode.y = tempEncode
+                    }
+                    if(serie.yAxisIndex){
+                        serie.xAxisIndex = serie.yAxisIndex
+                        delete serie.yAxisIndex
+                    }
+                });
+                console.log('Swapped option:',newOption)
+                // 交换 series 中的 encode 配置
+                return newOption
+            },
             updateChart(index) {
                 if(index<0){
                     return
@@ -150,7 +173,7 @@
                 if (option) {
                     if(option.series[0]){
                             myChart.group=option.group
-                            if(option.series.length === 2 &&(option.series[0].type === 'bar' || option.series[0].type === 'line')){
+                            if(option.series.length === 2){
                                 option.series[0].yAxisIndex = 0
                                 option.series[1].yAxisIndex = 1
                             }
@@ -160,8 +183,31 @@
                                     delete option.series[1].yAxisIndex
                                 }
                             }
+                            if(option.symbolSize){
+                                for(let i = 0; i < option.series.length; i++){
+                                    option.series[i].symbolSize = option.symbolSize
+                                }
+                            }
+                            if(option.ytype ){
+                                if(option.ytype === 'log'){
+                                    for(let i = 0; i < option.yAxis.length; i++){
+                                        option.yAxis[i].type = 'log'
+                                    }
+                                }
+                                else{
+                                    for(let i = 0; i < option.yAxis.length; i++){
+                                        delete option.yAxis[i].type
+                                    }
+                                }
+                            }
                             // 配置双轴显示
-                            myChart.setOption(option);
+                            if(option.invert == true){
+                                myChart.setOption(this.swapAxes(option))
+                            }
+                            else{
+                                myChart.setOption(option);
+                                console.log(option)
+                            }
                             echarts.connect(option.group)
                             // connect实现多图联动
                     }

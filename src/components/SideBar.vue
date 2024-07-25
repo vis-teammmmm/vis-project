@@ -190,8 +190,27 @@
                             />
                         </el-select>
                     </div>
-                    <br>
+                    <div v-if="selectedChartType === 'scatter'">
+                        <br>
+                        <!-- 当所选图表类型为散点图时显示 -->
+                        <span class="inputtext" >散点大小 </span>
+                        <el-select
+                            v-model="selectedChartOption.symbolSize"
+                            placeholder='15'
+                            style="width: 100px;"
+                            @change="updateChartData"
+                        >
+                            <el-option
+                                v-for="symbolSizeOption in symbolSizeOptionList"
+                                :key="symbolSizeOption.label"
+                                :label="symbolSizeOption.label"
+                                :value="symbolSizeOption.value"
+                                :class="{'myoption': darkMode == true}"
+                            />
+                        </el-select>
+                    </div>
                     <div v-if="selectedChartOption.xAxis">
+                        <br>
                         <!-- 当所选图表类型拥有x轴时显示 -->
                         <span class="inputtext" >x轴类型 </span>
                         <el-select
@@ -205,6 +224,63 @@
                                 :key="axisTypeOption.label"
                                 :label="axisTypeOption.label"
                                 :value="axisTypeOption.value"
+                                :class="{'myoption': darkMode == true}"
+                            />
+                        </el-select>
+                    </div>
+                    <div v-if="selectedChartOption.yAxis">
+                        <br>
+                        <!-- 当所选图表类型拥有x轴时显示 -->
+                        <span class="inputtext" >y轴类型 </span>
+                        <el-select
+                            v-model="selectedChartOption.ytype"
+                            placeholder='默认'
+                            style="width: 100px;"
+                            @change="updateChartData"
+                        >
+                            <el-option
+                                v-for="yType in yTypeList"
+                                :key="yType.label"
+                                :label="yType.label"
+                                :value="yType.value"
+                                :class="{'myoption': darkMode == true}"
+                            />
+                        </el-select>
+                    </div>
+                    <div v-if="selectedChartType !== 'pie'">
+                        <br>
+                        <!-- 当所选图表类型非饼图时显示 -->
+                        <span class="inputtext" >x-y转置 </span>
+                        <el-select
+                            v-model="selectedChartOption.invert"
+                            placeholder='否'
+                            style="width: 100px;"
+                            @change="updateChartData"
+                        >
+                            <el-option
+                                v-for="invertOption in invertOptionList"
+                                :key="invertOption.label"
+                                :label="invertOption.label"
+                                :value="invertOption.value"
+                                :class="{'myoption': darkMode == true}"
+                            />
+                        </el-select>
+                    </div>
+                    <div v-if="selectedChartType !== 'pie'">
+                        <br>
+                        <!-- 当所选图表类型非饼图时显示 -->
+                        <span class="inputtext" >排序反转 </span>
+                        <el-select
+                            v-model="selectedChartOption.xAxis.inverse"
+                            placeholder='否'
+                            style="width: 100px;"
+                            @change="updateChartData"
+                        >
+                            <el-option
+                                v-for="inverseOption in inverseOptionList"
+                                :key="inverseOption.label"
+                                :label="inverseOption.label"
+                                :value="inverseOption.value"
                                 :class="{'myoption': darkMode == true}"
                             />
                         </el-select>
@@ -282,7 +358,7 @@
                     <div v-else>
                         <!-- 柱形图，折线图和散点图的参数较为类似，所以一起处理 -->
                         <div>
-                            <span class="inputtext">分类依据 </span>
+                            <span class="inputtext">x轴数据 </span>
                             <el-select
                                 v-model="selectedCategories[selectedChartIndex]"
                                 placeholder='待选择'
@@ -300,7 +376,7 @@
                             <!-- 选择用于分类的数据维度 -->
                             <el-sub-menu >
                                 <template #title>
-                                    <span style="margin-left: -2em; font-size: small;">权重数据(可多选)</span>
+                                    <span style="margin-left: -2em; font-size: small;">y轴数据(可多选)</span>
                                 </template>
                                 <!-- 这里提供可多选的y轴数据 -->
                                 <el-menu-item
@@ -389,8 +465,12 @@
                         value:'category'
                     },
                     {
-                        label:'数值轴',
+                        label:'数值轴(默认)',
                         value:'value'
+                    },
+                    {
+                        label:'数值轴(对数)',
+                        value:'log'
                     },
                     {
                         label:'时间轴',
@@ -423,6 +503,58 @@
                         value:'Std'
                     }
                 ],
+                invertOptionList:[
+                    {
+                        label:'否',
+                        value:false
+                    },
+                    {
+                        label:'是',
+                        value:true
+                    }
+                ],
+                inverseOptionList:[
+                    {
+                        label:'否',
+                        value:false
+                    },
+                    {
+                        label:'是',
+                        value:'true'
+                    }
+                ],
+                symbolSizeOptionList:[
+                    {
+                        label:'3',
+                        value: 3
+                    },
+                    {
+                        label:'5',
+                        value:5
+                    },
+                    {
+                        label:'10',
+                        value:10
+                    },
+                    {
+                        label:'15',
+                        value:15
+                    },
+                    {
+                        label:'20',
+                        value:20
+                    }
+                ],
+                yTypeList:[
+                    {
+                        label:'默认',
+                        value:'default'
+                    },
+                    {
+                        label:'对数',
+                        value:'log'
+                    }
+                ]
                 // 用于列举可选参数的静态列表
             }
         },
@@ -437,16 +569,25 @@
                 this.selectedChartNum = num
             },
             // 更新当前选中的图表序号
-            updateFileDataset(){
-                const index = this.fileDataMap.findIndex(item => item.uid === this.selectedFileUid)
-                // 寻找匹配文件
-                if(index != -1){
-                    this.fileDataset = this.fileDataMap[index].dataset
-                    //更新文件uid，用于多图联动时的连接
-                }
-                else{
-                    this.$message.warning(`未识别到文件！`);
-                }
+            updateFileDataset() {
+                let retryCount = 0;
+                const maxRetries = 5;
+                const retryInterval = 1000;
+                const findFile = () => {
+                    const index = this.fileDataMap.findIndex(item => item.uid === this.selectedFileUid);
+                    if (index !== -1) {
+                        this.fileDataset = this.fileDataMap[index].dataset;
+                        this.$message.success('文件已选中 :)')
+                        // 更新文件uid，用于多图联动时的连接
+                    } else if (retryCount < maxRetries) {
+                        this.$message.warning(`文件还没加载好，一秒后为您重试！`);
+                        retryCount++;
+                        setTimeout(findFile, retryInterval);
+                    } else {
+                        this.$message.warning('啊吧啊吧……文件加载失败了 :( 请重启浏览器 QAQ');
+                    }
+                };
+                findFile();
             },
             addPieSerie(option){
                 let newPieSerie = {
@@ -478,23 +619,76 @@
                 }
                 option.series.push(newBarLikeSerie)
                 // 添加serie
-                if(charttype === 'bar' || charttype === 'line'){
-                    if(option.series.length === 1){
-                        let newY = {
-                            name:yvalue,
+                if(option.series.length === 1){
+                    let newY = {
+                        name:yvalue,
+                        type: 'value',
+                        axisLabel: {
+                            formatter: function (value) {
+                                return value >= 100000 ? value.toExponential(1) : value;
+                                // 条件选择科学计数法
+                            }
+                        }
+                    }
+                    option.yAxis[0]=newY
+                }
+                else if(option.series.length === 2){
+                    let newY1 = {
+                        name:yvalue,
+                        position:'right',
+                        type: 'value',
+                        axisLabel: {
+                            formatter: function (value) {
+                                return value >= 100000 ? value.toExponential(1) : value;
+                            }
+                        }
+                    }
+                    option.yAxis[1]=newY1
+                    let newY0 = {
+                        name:option.series[0].encode.y,
+                        type: 'value',
+                        axisLabel: {
+                            formatter: function (value) {
+                                return value >= 100000 ? value.toExponential(1) : value;
+                            }
+                        }
+                    }
+                    option.yAxis[0]=newY0
+                }
+                else {
+                    option.yAxis = [{
+                        type:'value',
+                        axisLabel: {
+                            formatter: function (value) {
+                                return value >= 100000 ? value.toExponential(1) : value;
+                            }
+                        }
+                    }]
+                }
+                // 为双轴柱形图自动设置双轴样式
+                // 为过大的轴标度提供科学计数法的显示方法
+            },
+            deleteBarLikeSerie(option,xvalue,yvalue){
+                // 删除非pie类的特定serie
+                if(option.series){
+                    option.series = option.series.filter(function(item){
+                        return !(item.encode.x === xvalue && item.encode.y === yvalue)
+                    })
+                    // 筛去 encode数据对应的serie
+                    // 删除时也需要注意双轴情况的处理
+                    if(option.series.length === 2){
+                        let newY0 = {
+                            name: option.series[0].encode.y,
                             type: 'value',
                             axisLabel: {
                                 formatter: function (value) {
                                     return value >= 100000 ? value.toExponential(1) : value;
-                                    // 条件选择科学计数法
                                 }
                             }
                         }
-                        option.yAxis[0]=newY
-                    }
-                    else if(option.series.length === 2){
+                        option.yAxis[0]=newY0
                         let newY1 = {
-                            name:yvalue,
+                            name: option.series[1].encode.y,
                             position:'right',
                             type: 'value',
                             axisLabel: {
@@ -504,8 +698,10 @@
                             }
                         }
                         option.yAxis[1]=newY1
+                    }
+                    else if(option.series.length === 1){
                         let newY0 = {
-                            name:option.series[0].encode.y,
+                            name: option.series[0].encode.y,
                             type: 'value',
                             axisLabel: {
                                 formatter: function (value) {
@@ -515,7 +711,7 @@
                         }
                         option.yAxis[0]=newY0
                     }
-                    else {
+                    else{
                         option.yAxis = [{
                             type:'value',
                             axisLabel: {
@@ -524,66 +720,6 @@
                                 }
                             }
                         }]
-                    }
-                }
-                // 为双轴柱形图自动设置双轴样式
-                // 为过大的轴标度提供科学计数法的显示方法
-                // 散点图的科学计数法实现在其初始化中
-            },
-            deleteBarLikeSerie(option,xvalue,yvalue){
-                // 删除非pie类的特定serie
-                if(option.series){
-                    option.series = option.series.filter(function(item){
-                        return !(item.encode.x === xvalue && item.encode.y === yvalue)
-                    })
-                    // 筛去 encode数据对应的serie
-                    if(this.selectedChartType == 'bar' || this.selectedChartType == 'line'){
-                        // 删除时也需要注意双轴情况的处理
-                        if(option.series.length === 2){
-                            let newY0 = {
-                                name: option.series[0].encode.y,
-                                type: 'value',
-                                axisLabel: {
-                                    formatter: function (value) {
-                                        return value >= 100000 ? value.toExponential(1) : value;
-                                    }
-                                }
-                            }
-                            option.yAxis[0]=newY0
-                            let newY1 = {
-                                name: option.series[1].encode.y,
-                                position:'right',
-                                type: 'value',
-                                axisLabel: {
-                                    formatter: function (value) {
-                                        return value >= 100000 ? value.toExponential(1) : value;
-                                    }
-                                }
-                            }
-                            option.yAxis[1]=newY1
-                        }
-                        else if(option.series.length === 1){
-                            let newY0 = {
-                                name: option.series[0].encode.y,
-                                type: 'value',
-                                axisLabel: {
-                                    formatter: function (value) {
-                                        return value >= 100000 ? value.toExponential(1) : value;
-                                    }
-                                }
-                            }
-                            option.yAxis[0]=newY0
-                        }
-                        else{
-                            option.yAxis = [{
-                                type:'value',
-                                axisLabel: {
-                                    formatter: function (value) {
-                                        return value >= 100000 ? value.toExponential(1) : value;
-                                    }
-                                }
-                            }]
-                        }
                     }
                 }
             },
@@ -618,9 +754,10 @@
             // 把barLikeSeries中所有的state变成false，模拟任何y轴数据都未选中
             updateCategory(xname){
                 if(this.selectedChartOption.series){
-                    for(let i = 0; i< this.chartOptionList[this.selectedChartIndex].series.length;i++){
-                        this.chartOptionList[this.selectedChartIndex].series[i].encode.x = xname
+                    for(let i = 0; i< this.selectedChartOption.series.length;i++){
+                        this.selectedChartOption.series[i].encode.x = xname
                     }
+                    this.selectedChartOption.xAxis.name = xname
                 }
                 this.updateChartData()
             },
@@ -635,7 +772,7 @@
                     // 已选中，则删除
                 }
                 else{
-                    this.addBarLikeSerie(this.selectedChartOption,this.selectedChartTypeList[this.selectedChartIndex],xname,yname)
+                    this.addBarLikeSerie(this.selectedChartOption,this.selectedChartType,xname,yname)
                     this.barLikeSeriesChosen[this.selectedChartIndex].find(item => item.name === yname).state = true
                     // 未删除，则选中
                 }
@@ -650,10 +787,14 @@
                         // 清空series
                         this.addPieSerie(this.selectedChartOption)
                         // 添加空serie
+                        delete this.selectedChartOption.symbolSize
                         this.selectedChartOption.tooltip.trigger='item'
                         this.selectedChartOption.legend.left='right'
+                        delete this.selectedChartOption.legend.bottom
+                        this.selectedChartOption.legend.orient='vertical'
                         delete this.selectedChartOption.xAxis
                         delete this.selectedChartOption.yAxis
+                        delete this.selectedChartOption.ytype
                         this.selectedChartOption.dataMethod = 'Default'
                         // 添加独有参数，删去不必要参数
                         this.selectedChartTypeList[this.selectedChartIndex] = 'pie'
@@ -671,6 +812,7 @@
                             },
                             left:'45%'
                         }
+                        this.selectedChartOption.invert = false
                         this.updateChartData()
                     }
                 }
@@ -683,10 +825,33 @@
                         this.destroySeries(this.selectedChartOption)
                         this.selectedChartOption.tooltip.trigger='axis'
                         this.selectedChartOption.xAxis={
-                            type:'category'
+                            type:'category',
+                            inverse:false,
+                            axisLabel:{
+                                formatter: function (value) {
+                                    if (typeof value === 'string') {
+                                        // 如果值是字符串且能转换为日期，则尝试将值解释为日期
+                                        const date = new Date(value);
+                                        if (!isNaN(date.getTime())) {
+                                            // 确保这是一个有效的日期
+                                            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                                        }
+                                    }
+                                    // 对于数字，执行数值格式化
+                                    else if (typeof value === 'number') {
+                                        return value >= 100000 ? value.toExponential(1) : value;
+                                    }
+                                    // 兜底返回原始值
+                                    return value;
+                                }
+                            }
                         }
+                        delete this.selectedChartOption.symbolSize
+                        this.selectedChartOption.ytype = 'default'
                         this.selectedChartOption.yAxis=[{}]
                         this.selectedChartOption.legend.left='center'
+                        this.selectedChartOption.legend.orient = 'horizontal'
+                        this.selectedChartOption.legend.bottom = 10
                         this.selectedChartOption.dataMethod = 'Default'
                         this.selectedChartTypeList[this.selectedChartIndex]='bar'
                         this.barLikeSeriesTurnFalse(this.selectedChartIndex)
@@ -696,10 +861,11 @@
                             feature: {
                                 dataView: { show: true, readOnly: false },
                                 magicType: { show: false},
-                                restore: { show: true },
+                                restore: { show: false },
                                 saveAsImage: { show: true }
                             }
                         }
+                        this.selectedChartOption.invert = false
                         this.updateChartData()
                     }
                 }
@@ -711,10 +877,33 @@
                         this.destroySeries(this.selectedChartOption)
                         this.selectedChartOption.tooltip.trigger='axis'
                         this.selectedChartOption.xAxis={
-                            type:'category'
+                            type:'category',
+                            inverse:false,
+                            axisLabel:{
+                                formatter: function (value) {
+                                    if (typeof value === 'string') {
+                                        // 如果值是字符串且能转换为日期，则尝试将值解释为日期
+                                        const date = new Date(value);
+                                        if (!isNaN(date.getTime())) {
+                                            // 确保这是一个有效的日期
+                                            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                                        }
+                                    }
+                                    // 对于数字，执行数值格式化
+                                    else if (typeof value === 'number') {
+                                        return value >= 100000 ? value.toExponential(1) : value;
+                                    }
+                                    // 兜底返回原始值
+                                    return value;
+                                }
+                            }
                         }
+                        delete this.selectedChartOption.symbolSize
                         this.selectedChartOption.yAxis=[{}]
+                        this.selectedChartOption.ytype = 'default'
                         this.selectedChartOption.legend.left='center'
+                        this.selectedChartOption.legend.bottom = 10
+                        this.selectedChartOption.legend.orient = 'horizontal'
                         this.selectedChartOption.dataMethod = 'Default'
                         this.selectedChartTypeList[this.selectedChartIndex]='line'
                         this.barLikeSeriesTurnFalse(this.selectedChartIndex)
@@ -724,10 +913,11 @@
                             feature: {
                                 dataView: { show: true, readOnly: false },
                                 magicType: { show: false},
-                                restore: { show: true },
+                                restore: { show: false },
                                 saveAsImage: { show: true }
                             }
                         }
+                        this.selectedChartOption.invert = false
                         this.updateChartData()
                     }
                 }
@@ -739,18 +929,34 @@
                     if(this.selectedChartType !== 'scatter'){
                         this.destroySeries(this.selectedChartOption)
                         this.selectedChartOption.tooltip.trigger='item'
+                        this.selectedChartOption.symbolSize = 10
                         this.selectedChartOption.xAxis={
-                            type:'category'
-                        }
-                        this.selectedChartOption.yAxis={
-                            type:'value',
-                            axisLabel: {
+                            type:'category',
+                            inverse:false,
+                            axisLabel:{
                                 formatter: function (value) {
-                                    return value >= 100000 ? value.toExponential(1) : value;
+                                    if (typeof value === 'string') {
+                                        // 如果值是字符串且能转换为日期，则尝试将值解释为日期
+                                        const date = new Date(value);
+                                        if (!isNaN(date.getTime())) {
+                                            // 确保这是一个有效的日期
+                                            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                                        }
+                                    }
+                                    // 对于数字，执行数值格式化
+                                    else if (typeof value === 'number') {
+                                        return value >= 100000 ? value.toExponential(1) : value;
+                                    }
+                                    // 兜底返回原始值
+                                    return value;
                                 }
                             }
                         }
+                        this.selectedChartOption.yAxis=[{}]
+                        this.selectedChartOption.ytype = 'default'
                         this.selectedChartOption.legend.left='center'
+                        this.selectedChartOption.legend.bottom = 10
+                        this.selectedChartOption.legend.orient = 'horizontal'
                         this.selectedChartOption.dataMethod = 'Default'
                         this.selectedChartTypeList[this.selectedChartIndex]='scatter'
                         this.barLikeSeriesTurnFalse(this.selectedChartIndex)
@@ -764,10 +970,10 @@
                                 saveAsImage: { show: true }
                             }
                         }
+                        this.selectedChartOption.invert = false
                         this.updateChartData()
                     }
                 }
-
             },
             // 改变当前选中的图表的种类
             addChart(){
@@ -784,6 +990,7 @@
                     // 在chartNumList中添加
                     let newChartOption=
                     {
+                        invert:false,
                         group:this.selectedFileUid.toString(),
                         dataMethod:'Default',
                         title: {
@@ -836,6 +1043,7 @@
                     this.selectedCategories.push('')
                     // x轴未选中，置空
                     this.updateAll()
+                    this.$message.success('根据文件 '+this.fileList.find(item=>item.uid===this.selectedFileUid).name+' 生成视图 :)')
                 }
             },
             updateAll(){
@@ -864,10 +1072,12 @@
                         this.barLikeSeriesChosen[this.selectedChartIndex].find(item => item.name === this.selectedChartOption.series[i].encode.y).state = true
                     }
                     if(this.selectedChartOption.yAxis){
-                        for(let i = 0; i < this.selectedChartOption.yAxis.length; i++){
-                            if(this.selectedChartOption.series[i]){
-                                this.selectedChartOption.yAxis[i].name = this.selectedChartOption.series[i].encode.y
-                            }
+                        if(this.selectedChartOption.series.length == 2){
+                            this.selectedChartOption.yAxis[0].name = this.selectedChartOption.series[0].encode.y
+                            this.selectedChartOption.yAxis[1].name = this.selectedChartOption.series[1].encode.y
+                        }
+                        else if(this.selectedChartOption.series.length == 1){
+                            this.selectedChartOption.yAxis[0].name = this.selectedChartOption.series[0].encode.y
                         }
                     }
                 }
