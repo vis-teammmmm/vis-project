@@ -1,24 +1,22 @@
-# project-2-7-18
+## 数据可视化短学期大作业：`project-2-7-18`
 
-## Project setup
-```
+### 1. 环境配置：
+
+```bash
 npm install
 ```
+### 2. 使用方法：
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+#### 2.1 运行后端：
 
-### Compiles and minifies for production
+```bash
+cd server
+node app.js
 ```
-npm run build
-```
+#### 2.2 运行前端：
+另外打开一个终端，运行：
 
-### Lints and fixes files
+```bash
+vue serve
 ```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+用浏览器打开运行结果中给出的地址即可看到可视化界面。
